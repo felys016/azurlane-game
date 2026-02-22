@@ -51,29 +51,34 @@ function shuffle(arr) {
 }
 
 function parseShips(json) {
-  return Object.entries(json)
-    .filter(([id]) => id !== "version-number")
-    .map(([id, s]) => ({
-      id,
-      name:      s.names?.en || s.names?.code || id,
-      faction:   s.nationality || "Unknown",
-      type:      s.hullType || s.class || "Unknown",
-      rarity:    s.rarity || "Normal",
-        thumbnail: (() => {
-            const skins = s.skins || [];
-            // Try exact name match first
-            const exactMatch = skins.find(sk => sk.name === s.names?.en);
-            if (exactMatch?.image) return exactMatch.image;
-            // Try skin named "Default"
-            const def = skins.find(sk => sk.name === "Default" || sk.name === "default");
-            if (def?.image) return def.image;
-            // Try the last skin (retrofits often add skins at the end)
-            const last = skins[skins.length - 1];
-            if (last?.image) return last.image;
-            return s.thumbnail || null;
-        })(),
-    }))
-    .filter(s => s.name);
+    return Object.entries(json)
+        .filter(([id]) => id !== "version-number")
+        .map(([id, s]) => {
+            const name = s.names?.en || s.names?.code || id;
+            if (name.includes("Hornet")) {
+                console.log(name, s.skins?.map(sk => ({ name: sk.name, image: sk.image })));
+            }
+            return {
+                id,
+                name,
+                faction: s.nationality || "Unknown",
+                type: s.hullType || s.class || "Unknown",
+                rarity: s.rarity || "Normal",
+                thumbnail: (() => {
+                    const skins = s.skins || [];
+                    const name = s.names?.en || "";
+                    // Get the last word of the ship name (e.g. "II", "META", "III")
+                    const suffix = name.split(" ").pop();
+                    const suffixMatch = skins.find(sk => sk.name === suffix);
+                    if (suffixMatch?.image) return suffixMatch.image;
+                    // Fall back to Default skin
+                    const def = skins.find(sk => sk.name === "Default");
+                    if (def?.image) return def.image;
+                    return skins[0]?.image || s.thumbnail || null;
+                })(),
+            };
+        })
+        .filter(s => s.name);
 }
 
 // Build rounds from a list of ships
