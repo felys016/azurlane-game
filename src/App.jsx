@@ -59,7 +59,19 @@ function parseShips(json) {
       faction:   s.nationality || "Unknown",
       type:      s.hullType || s.class || "Unknown",
       rarity:    s.rarity || "Normal",
-      thumbnail: s.skins?.[0]?.image || s.skins?.[1]?.image || s.thumbnail || null,
+        thumbnail: (() => {
+            const skins = s.skins || [];
+            // Try exact name match first
+            const exactMatch = skins.find(sk => sk.name === s.names?.en);
+            if (exactMatch?.image) return exactMatch.image;
+            // Try skin named "Default"
+            const def = skins.find(sk => sk.name === "Default" || sk.name === "default");
+            if (def?.image) return def.image;
+            // Try the last skin (retrofits often add skins at the end)
+            const last = skins[skins.length - 1];
+            if (last?.image) return last.image;
+            return s.thumbnail || null;
+        })(),
     }))
     .filter(s => s.name);
 }
